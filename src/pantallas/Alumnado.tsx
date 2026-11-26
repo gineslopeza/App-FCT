@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Check, Search, UserRound } from 'lucide-react';
+import { Check, Search, UserPlus, UserRound } from 'lucide-react';
 import { useApp, usePreferencias } from '../datos/estado';
 import { fechaCorta, opAlumno, useDerivados } from '../datos/derivados';
-import { PASOS, nombreCompleto, nombreLista, type Alumno, type Paso } from '../datos/modelo';
+import { PASOS, claveAlumno, nombreCompleto, nombreLista, partirNombres, type Alumno, type Paso } from '../datos/modelo';
 import { avisosAlumno, edadEn, fechaLarga, FIRMAS, hoyISO, progreso, sumarDias } from '../datos/avisos';
-import { Empty, Field, PageHeader, PanelLateral, Progreso, Seccion } from '../componentes/ui';
+import { Empty, Field, Modal, PageHeader, PanelLateral, Progreso, Seccion } from '../componentes/ui';
 import { ir } from '../App';
 
 type Filtro = 'todos' | 'sinEmpresa' | 'sinTutor' | 'avisos' | 'pendientes';
@@ -25,6 +25,7 @@ export default function Alumnado({ abrir }: { abrir: string | null }) {
   const [marcados, setMarcados] = useState<Set<string>>(new Set());
   const [pasoMasivo, setPasoMasivo] = useState(PASOS[0].clave);
   const [cursoVisto, setCursoVisto] = useState(cursoInicial);
+  const [anadir, setAnadir] = useState(false);
   if (cursoInicial && cursoInicial !== cursoVisto) { setCursoVisto(cursoInicial); setCurso(cursoInicial); }
 
   const ficha = abrir && !abrir.startsWith('curso:') ? datos.alumnos.find((a) => a.id === abrir) ?? null : null;
@@ -56,7 +57,7 @@ export default function Alumnado({ abrir }: { abrir: string | null }) {
 
   return (
     <>
-      <PageHeader title="Alumnado">Tramitación de la formación en empresa de cada alumno: empresa, tutor, fechas y los pasos en SAO.</PageHeader>
+      <PageHeader title="Alumnado" actions={<button className="btn btn-primary" onClick={() => setAnadir(true)}><UserPlus size={16} aria-hidden /> Añadir alumnado</button>}>Tramitación de la formación en empresa de cada alumno: empresa, tutor, fechas y los pasos en SAO.</PageHeader>
 
       <div className="tabs mb-4" role="tablist" aria-label="Curso">
         {pestanas.map((p) => (
@@ -128,6 +129,7 @@ export default function Alumnado({ abrir }: { abrir: string | null }) {
       </div>
 
       {ficha && <FichaAlumno a={ficha} onClose={() => ir('alumnado')} />}
+      {anadir && <AnadirAlumnado curso={curso && curso !== 'mios' ? curso : ''} onClose={() => setAnadir(false)} />}
     </>
   );
 }
@@ -254,5 +256,80 @@ function FichaAlumno({ a, onClose }: { a: Alumno; onClose: () => void }) {
         </dl>
       </Seccion>
     </PanelLateral>
+  );
+}
+
+type Fila = { nombre: string; apellido1: string; apellido2: string; nia: string };
+
+/** Alta de alumnado pegando una lista (de ITACA, de Excel o escrita a mano). Se revisa antes de guardar. */
+function AnadirAlumnado({ curso: inicial, onClose }: { curso: string; onClose: () => void }) {
+  const { datos, cambiar } = useApp();
+  const hojas = Object.entries(datos.hojasAlumnado).sort((a, b) => a[1].curso.localeCompare(b[1].curso));
+  const [hoja, setHoja] = useState(() => hojas.find(([, h]) => h.curso === inicial)?.[0] ?? hojas[0]?.[0] ?? '');
+  const [texto, setTexto] = useState('');
+  const [filas, setFilas] = useState<Fila[] | null>(null);
+  const existentes = new Set(datos.alumnos.filter((a) => a.hoja === hoja).map(claveAlumno));
+  const repetido = (f: Fila) => existentes.has(claveAlumno({ nombre: f.nombre.trim(), apellido1: f.apellido1.trim(), nia: f.nia.trim() }));
+  const validas = (filas ?? []).filter((f) => f.nombre.trim() && !repetido(f));
+  const editar = (i: number, campo: keyof Fila, v: string) => setFilas((fs) => fs!.map((f, j) => (j === i ? { ...f, [campo]: v } : f)));
+  const guardar = () => {
+    cambiar(validas.map((f) => ({ tipo: 'alumno_nuevo' as const, hoja, datos: f })));
+    onClose();
+    ir('alumnado', 'curso:' + datos.hojasAlumnado[hoja].curso);
+  };
+  const actuales = datos.alumnos.filter((a) => a.hoja === hoja).length;
+
+  return (
+    <Modal title="Añadir alumnado" onClose={onClose} wide>
+      <div className="space-y-4">
+        <Field label="Curso">
+          <select className="input" value={hoja} onChange={(e) => setHoja(e.target.value)}>
+            {hojas.map(([h, x]) => <option key={h} value={h}>{x.curso} ({h})</option>)}
+          </select>
+        </Field>
+        <p className="-mt-2 text-xs text-slate-600">Ahora hay {actuales} alumnos en esta hoja. Los nuevos se añaden debajo, con sus casillas de tramitación.</p>
+        {filas === null ? (
+          <>
+            <Field label="Lista de alumnos (uno por línea)">
+              <textarea className="input min-h-48 font-mono text-xs" value={texto} onChange={(e) => setTexto(e.target.value)}
+                placeholder={'García López, Ana\nPablo Martí Soler\nMaría José\tFerrer\tRoig\t10234567'} />
+            </Field>
+            <p className="text-xs text-slate-600">Sirve la lista de ITACA («Apellidos, Nombre»), columnas copiadas de Excel (Nombre, Apellido 1, Apellido 2 y, si quieres, el NIA) o «Nombre Apellido1 Apellido2». En el paso siguiente puedes corregir cada nombre.</p>
+            <div className="flex justify-end gap-2">
+              <button className="btn" onClick={onClose}>Cancelar</button>
+              <button className="btn btn-primary" disabled={!texto.trim()} onClick={() => setFilas(partirNombres(texto))}>Revisar</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="max-h-[55vh] overflow-auto rounded-md border border-slate-200">
+              <table className="tbl">
+                <thead className="sticky top-0"><tr><th>Nombre</th><th>Apellido 1</th><th>Apellido 2</th><th>NIA</th><th className="w-24" /></tr></thead>
+                <tbody>
+                  {filas.map((f, i) => (
+                    <tr key={i} className={repetido(f) ? 'opacity-60' : ''}>
+                      {(['nombre', 'apellido1', 'apellido2', 'nia'] as const).map((c) => (
+                        <td key={c}><input className="input py-1" aria-label={`${c === 'nombre' ? 'Nombre' : c === 'nia' ? 'NIA' : c === 'apellido1' ? 'Apellido 1' : 'Apellido 2'}, fila ${i + 1}`} value={f[c]} onChange={(e) => editar(i, c, e.target.value)} /></td>
+                      ))}
+                      <td className="text-xs">
+                        {repetido(f) ? <span className="text-amber-800">Ya está</span>
+                          : <button className="btn btn-ghost btn-sm" onClick={() => setFilas(filas.filter((_, j) => j !== i))}>Quitar</button>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <button className="btn" onClick={() => setFilas(null)}>Volver a la lista</button>
+              <div className="flex gap-2">
+                <button className="btn" onClick={onClose}>Cancelar</button>
+                <button className="btn btn-primary" disabled={!validas.length} onClick={guardar}>Añadir {validas.length} a {datos.hojasAlumnado[hoja]?.curso}</button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 }

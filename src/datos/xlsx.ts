@@ -20,6 +20,7 @@ export type Cambio = {
   valor: Valor;
   fecha?: boolean;          // el número es una fecha (serie de Excel)
   formula?: string;         // escribir una fórmula en lugar de un valor
+  clonarDe?: number;        // antes de escribir, si la fila no existe, crearla copiando la fila indicada (estilos, casillas y fórmulas; sin valores)
 };
 
 // ------------------------------------------------------------------ utilidades
@@ -143,6 +144,29 @@ export function ponerCelda(xml: string, c: Cambio): string {
   return xml.slice(0, mf.index) + nuevaFila + xml.slice(mf.index + mf[0].length);
 }
 
+/**
+ * Crea la fila `a` como copia vacía de la fila `de`: mismos estilos (casillas de Excel incluidas) y las fórmulas
+ * desplazadas, sin valores. Si la fila `a` ya existe, no hace nada (ya está preparada).
+ */
+export function clonarFila(xml: string, de: number, a: number): string {
+  if (new RegExp(`<row\\s[^>]*?r="${a}"`).test(xml)) return xml;
+  const m = new RegExp(`<row\\s[^>]*?r="${de}"[^>]*?(?:/>|>[\\s\\S]*?</row>)`).exec(xml);
+  if (!m) return xml;
+  const fila = m[0]
+    .replace(new RegExp(`(<row\\s[^>]*?)r="${de}"`), `$1r="${a}"`)
+    .replace(/<c\s([^>]*?)(\/>|>([\s\S]*?)<\/c>)/g, (_x, at: string, _cierre: string, cuerpo?: string) => {
+      const atr = at.replace(new RegExp(`r="([A-Z]+)${de}"`), `r="$1${a}"`).replace(/\st="[^"]*"/, '');
+      const f = cuerpo && /<f(?:\s[^>]*)?>([\s\S]*?)<\/f>/.exec(cuerpo);
+      return f && f[1] ? `<c ${atr}><f>${escapar(moverFormula(desescapar(f[1]), de, a))}</f></c>` : `<c ${atr}/>`;
+    });
+  // en su sitio, por número de fila
+  const cuerpo = /<sheetData>([\s\S]*?)<\/sheetData>/.exec(xml)!;
+  const ini = cuerpo.index + '<sheetData>'.length;
+  let pos = ini + cuerpo[1].length;
+  for (const r of cuerpo[1].matchAll(/<row\s[^>]*?r="(\d+)"/g)) if (+r[1] > a) { pos = ini + r.index!; break; }
+  return xml.slice(0, pos) + fila + xml.slice(pos);
+}
+
 /** Aplica los cambios y devuelve el fichero nuevo. Las tablas de Excel crecen si se escribe justo debajo de ellas. */
 export function aplicarCambios(libro: Libro, cambios: Cambio[]): Uint8Array {
   const partes = { ...libro.partes };
@@ -152,7 +176,10 @@ export function aplicarCambios(libro: Libro, cambios: Cambio[]): Uint8Array {
     const h = hoja(libro, nombre);
     if (!h) throw new Error(`No existe la hoja «${nombre}» en el Excel.`);
     let xml = strFromU8(partes[h.ruta]);
-    for (const c of cs) xml = ponerCelda(xml, { ...c, valor: c.fecha && typeof c.valor === 'string' ? fechaASerie(c.valor) : c.valor });
+    for (const c of cs) {
+      if (c.clonarDe) { xml = clonarFila(xml, c.clonarDe, partir(c.celda).fila); continue; }
+      xml = ponerCelda(xml, { ...c, valor: c.fecha && typeof c.valor === 'string' ? fechaASerie(c.valor) : c.valor });
+    }
     // dimensión: que abarque lo escrito
     const maxFila = Math.max(...cs.map((c) => partir(c.celda).fila));
     xml = xml.replace(/<dimension ref="([A-Z]+\d+):([A-Z]+)(\d+)"\/>/, (m, a, b, f) => (maxFila > +f ? `<dimension ref="${a}:${b}${maxFila}"/>` : m));

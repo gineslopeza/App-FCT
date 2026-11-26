@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { strFromU8, unzipSync } from 'fflate';
-import { abrirLibro, aplicarCambios, moverFormula, ponerCelda, valor, hoja } from '../src/datos/xlsx';
-import { aCambios, claveAlumno, leerDatos } from '../src/datos/modelo';
+import { abrirLibro, aplicarCambios, clonarFila, moverFormula, ponerCelda, valor, hoja } from '../src/datos/xlsx';
+import { aCambios, claveAlumno, leerDatos, partirNombres } from '../src/datos/modelo';
 import { calcularReparto, repartoJusto } from '../src/datos/reparto';
 import { avisosAlumno, hayQueHablar } from '../src/datos/avisos';
 import { duenoDeBloqueo, esCopiaConflicto } from '../src/datos/almacen';
@@ -92,6 +92,47 @@ describe('modelo', () => {
     expect(d2.empresas.at(-1)!.plazas).toBe(2);
     const tabla = Object.entries(nuevo.partes).find(([k, v]) => k.startsWith('xl/tables/') && strFromU8(v).includes('Tabla5'))!;
     expect(strFromU8(tabla[1])).toContain(`ref="A3:Z${d2.empresas.at(-1)!.fila}"`);
+  });
+});
+
+describe('alta de alumnado', () => {
+  it('entiende las listas de ITACA, de Excel y escritas a mano', () => {
+    expect(partirNombres('García López, Ana\nPablo Martí Soler\nMaría José Ferrer Roig 10234567\nLuis\tPons\tVidal\t12345678\n\n')).toEqual([
+      { nombre: 'Ana', apellido1: 'García', apellido2: 'López', nia: '' },
+      { nombre: 'Pablo', apellido1: 'Martí', apellido2: 'Soler', nia: '' },
+      { nombre: 'María José', apellido1: 'Ferrer', apellido2: 'Roig', nia: '10234567' },
+      { nombre: 'Luis', apellido1: 'Pons', apellido2: 'Vidal', nia: '12345678' },
+    ]);
+  });
+
+  it('añade alumnos debajo de los que hay, sin repetir, y la fila nueva copia casillas y fórmulas', () => {
+    const libro = demo();
+    const d = leerDatos(libro);
+    const h = Object.keys(d.hojasAlumnado).find((x) => d.hojasAlumnado[x].curso === '2FPB')!;
+    const antes = d.alumnos.filter((a) => a.hoja === h);
+    const ultima = Math.max(...antes.map((a) => a.fila));
+    const ya = antes[0];
+    const { cambios, conflictos } = aCambios(d, libro, [
+      { tipo: 'alumno_nuevo', hoja: h, datos: { nombre: 'Nueva', apellido1: 'Prueba', apellido2: 'Uno', nia: '99999991' } },
+      { tipo: 'alumno_nuevo', hoja: h, datos: { nombre: 'Otra', apellido1: 'Prueba' } },
+      { tipo: 'alumno_nuevo', hoja: h, datos: { nombre: ya.nombre, apellido1: ya.apellido1, nia: ya.nia } },
+    ]);
+    expect(conflictos).toHaveLength(1);
+    const d2 = leerDatos(abrirLibro(aplicarCambios(libro, cambios)));
+    const despues = d2.alumnos.filter((a) => a.hoja === h);
+    expect(despues).toHaveLength(antes.length + 2);
+    const nueva = despues.find((a) => a.nombre === 'Nueva')!;
+    expect(nueva.fila).toBe(ultima + 1);
+    expect(nueva.nia).toBe('99999991');
+    expect(despues.find((a) => a.nombre === 'Otra')!.fila).toBe(ultima + 2);
+    expect(Object.values(nueva.pasos).every((v) => v === false)).toBe(true);
+  });
+
+  it('clona una fila con sus estilos y fórmulas desplazadas, sin valores', () => {
+    const xml = '<worksheet><sheetData><row r="4" ht="15"><c r="A4" s="3" t="s"><v>1</v></c><c r="B4" s="9" t="b"><v>1</v></c><c r="C4" s="2"><f>IF($A4="","",B4*2)</f><v>2</v></c></row><row r="9"><c r="A9"/></row></sheetData></worksheet>';
+    const x = clonarFila(xml, 4, 5);
+    expect(x).toContain('<row r="5" ht="15"><c r="A5" s="3"/><c r="B5" s="9"/><c r="C5" s="2"><f>IF($A5=&quot;&quot;,&quot;&quot;,B5*2)</f></c></row><row r="9">');
+    expect(clonarFila(x, 4, 5)).toBe(x);
   });
 });
 

@@ -32,6 +32,8 @@ export type Historico = { curso: string; grupo: string; empresa: string; alumnos
 export type Datos = {
   cursos: Curso[]; alumnos: Alumno[]; empresas: Empresa[]; reparto: FilaReparto[]; historico: Historico[];
   hojaReparto: string | null; hojaEmpresas: string | null; colsEmpresas: Record<string, string>; filaCabEmpresas: number;
+  /** Hojas de alumnado de este curso: fila de cabeceras y columnas (también las que aún no tienen alumnos). */
+  hojasAlumnado: Record<string, { curso: string; filaCab: number; cols: Record<string, string> }>;
   cursoEscolar: string; avisosLectura: string[];
 };
 
@@ -119,12 +121,14 @@ export function leerDatos(libro: Libro): Datos {
   // Hojas de alumnado (las del curso actual) e histórico (las de otros años)
   const alumnos: Alumno[] = [];
   const historico: Historico[] = [];
+  const hojasAlumnado: Datos['hojasAlumnado'] = {};
   for (const h of libro.hojas) {
     const m = CURSO_RE.exec(h.nombre);
     if (!m) continue;
     const cab = cabeceras(h, ['NOMBRE'], CAB_ALUMNO);
     if (!cab) { avisos.push(`La hoja «${h.nombre}» no tiene la fila de cabeceras esperada (NOMBRE, APELLIDO 1…).`); continue; }
     const deEsteCurso = m[2] === actual;
+    if (deEsteCurso) hojasAlumnado[h.nombre] = { curso: m[1], filaCab: cab.fila, cols: cab.cols };
     for (let f = cab.fila + 1; f <= h.maxFila; f++) {
       const get = (campo: string) => (cab.cols[campo] ? valor(h, cab.cols[campo] + f) : null);
       const nombre = txt(get('nombre'));
@@ -205,7 +209,7 @@ export function leerDatos(libro: Libro): Datos {
     const m = CURSO_RE.exec(h.nombre);
     if (m && m[2] === actual && !cursos.some((c) => c.codigo === m[1])) cursos.push({ codigo: m[1], hoja: h.nombre, previstos: null, fila: null });
   }
-  return { cursos, alumnos, empresas, reparto, historico, hojaReparto: hr?.nombre ?? null, hojaEmpresas: he?.nombre ?? null, colsEmpresas, filaCabEmpresas, cursoEscolar, avisosLectura: avisos };
+  return { cursos, alumnos, empresas, reparto, historico, hojaReparto: hr?.nombre ?? null, hojaEmpresas: he?.nombre ?? null, colsEmpresas, filaCabEmpresas, hojasAlumnado, cursoEscolar, avisosLectura: avisos };
 }
 
 // ------------------------------------------------------------------ escritura (cambios → celdas)
@@ -214,6 +218,7 @@ export type Operacion =
   | { tipo: 'alumno'; id: string; hoja: string; fila: number; clave: string; campo: string; valor: Valor }
   | { tipo: 'empresa'; id: string; fila: number; campo: string; valor: Valor }
   | { tipo: 'empresa_nueva'; nombre: string; datos: Partial<Record<string, Valor>> }
+  | { tipo: 'alumno_nuevo'; hoja: string; datos: { nombre: string; apellido1?: string; apellido2?: string; nia?: string } }
   | { tipo: 'reparto'; curso: string; profesor: string; campo: 'horas' | 'peso' | 'ajuste'; valor: Valor };
 
 const CAMPOS_FECHA = new Set(['fechaInicio', 'fechaFin', 'fechaNacimiento', 'ultimoContacto', 'fechaProxima']);
@@ -227,6 +232,8 @@ export function aCambios(datos: Datos, libro: Libro, ops: Operacion[]): { cambio
   const cambios: Cambio[] = [];
   const conflictos: string[] = [];
   let siguienteFilaEmpresa = Math.max(datos.filaCabEmpresas, ...datos.empresas.map((e) => e.fila)) + 1;
+  const siguienteFilaAlumno: Record<string, number> = {};
+  const claves = new Set(datos.alumnos.map((a) => a.hoja + '#' + claveAlumno(a)));
   for (const op of ops) {
     if (op.tipo === 'alumno') {
       const a = datos.alumnos.find((x) => x.hoja === op.hoja && claveAlumno(x) === op.clave);
@@ -249,6 +256,20 @@ export function aCambios(datos: Datos, libro: Libro, ops: Operacion[]): { cambio
         if (col && v !== undefined && v !== null && v !== '') cambios.push({ hoja: datos.hojaEmpresas, celda: col + f, valor: v, fecha: CAMPOS_FECHA.has(campo) });
       }
       cambios.push(...formulasFilaNueva(libro, datos.hojaEmpresas, f));
+    } else if (op.tipo === 'alumno_nuevo') {
+      const ha = datos.hojasAlumnado[op.hoja];
+      const nombre = op.datos.nombre.trim();
+      if (!ha || !ha.cols.nombre) { conflictos.push(`No se encuentra la hoja de alumnado «${op.hoja}».`); continue; }
+      if (!nombre) continue;
+      const clave = op.hoja + '#' + claveAlumno({ nombre, apellido1: op.datos.apellido1?.trim() ?? '', nia: op.datos.nia?.trim() ?? '' });
+      if (claves.has(clave)) { conflictos.push(`${nombre} ${op.datos.apellido1 ?? ''} ya está en «${op.hoja}».`.replace(/\s+»/, '»')); continue; }
+      claves.add(clave);
+      const f = (siguienteFilaAlumno[op.hoja] ??= Math.max(ha.filaCab, ...datos.alumnos.filter((a) => a.hoja === op.hoja).map((a) => a.fila)) + 1);
+      siguienteFilaAlumno[op.hoja] = f + 1;
+      // si la fila no está preparada (casillas, fórmulas), se copia la de encima
+      if (f > ha.filaCab + 1) cambios.push({ hoja: op.hoja, celda: `A${f}`, valor: null, clonarDe: f - 1 });
+      const valores: Record<string, Valor> = { nombre, apellido1: op.datos.apellido1?.trim() || null, apellido2: op.datos.apellido2?.trim() || null, nia: op.datos.nia?.trim() || null };
+      for (const [campo, v] of Object.entries(valores)) if (v !== null && ha.cols[campo]) cambios.push({ hoja: op.hoja, celda: ha.cols[campo] + f, valor: campo === 'nia' && /^\d+$/.test(String(v)) ? Number(v) : v });
     } else if (op.tipo === 'reparto') {
       const r = datos.reparto.find((x) => x.curso === op.curso && x.profesor === op.profesor);
       const col = r?.cols[op.campo];
@@ -270,3 +291,38 @@ function formulasFilaNueva(libro: Libro, nombreHoja: string, fila: number): Camb
 export const nombreCompleto = (a: Pick<Alumno, 'nombre' | 'apellido1' | 'apellido2'>) => [a.nombre, a.apellido1, a.apellido2].filter(Boolean).join(' ');
 export const nombreLista = (a: Pick<Alumno, 'nombre' | 'apellido1' | 'apellido2'>) => [a.apellido1, a.apellido2].filter(Boolean).join(' ') + (a.apellido1 ? ', ' : '') + a.nombre;
 export { hoja };
+
+/**
+ * Convierte una lista pegada (una persona por línea) en nombre y apellidos. Admite:
+ * - «Apellido1 Apellido2, Nombre» (como sale de ITACA);
+ * - columnas separadas por tabulador, pegadas desde Excel: Nombre, Apellido 1, Apellido 2 (y el NIA, si lo hay);
+ * - «Nombre Apellido1 Apellido2»: los dos últimos son los apellidos y el resto, el nombre.
+ * Un número de 6 a 10 cifras se toma como NIA. El resultado se revisa antes de guardarlo.
+ */
+export function partirNombres(texto: string): { nombre: string; apellido1: string; apellido2: string; nia: string }[] {
+  const out: { nombre: string; apellido1: string; apellido2: string; nia: string }[] = [];
+  for (const linea of texto.split(/\r?\n/)) {
+    let l = linea.trim();
+    if (!l) continue;
+    let nia = '';
+    if (l.includes('\t')) {
+      const cols = l.split('\t').map((x) => x.trim()).filter(Boolean);
+      const i = cols.findIndex((x) => /^\d{6,10}$/.test(x));
+      if (i >= 0) nia = cols.splice(i, 1)[0];
+      out.push({ nombre: cols[0] ?? '', apellido1: cols[1] ?? '', apellido2: cols.slice(2).join(' '), nia });
+      continue;
+    }
+    l = l.replace(/\b\d{6,10}\b/, (m) => { nia = m; return ' '; }).replace(/\s+/g, ' ').replace(/^[\s,;.-]+|[\s,;.-]+$/g, '');
+    if (!l) continue;
+    if (l.includes(',')) {
+      const [apellidos, nombre] = l.split(',', 2).map((x) => x.trim());
+      const ap = apellidos.split(' ');
+      out.push({ nombre, apellido1: ap[0] ?? '', apellido2: ap.slice(1).join(' '), nia });
+      continue;
+    }
+    const t = l.split(' ');
+    const n = t.length <= 3 ? 1 : t.length - 2;
+    out.push({ nombre: t.slice(0, n).join(' '), apellido1: t[n] ?? '', apellido2: t.slice(n + 1).join(' '), nia });
+  }
+  return out;
+}
