@@ -32,6 +32,7 @@ export default function Reparto() {
       <details className="card mb-5 p-4 text-sm text-slate-700">
         <summary className="flex cursor-pointer items-center gap-2 font-semibold text-slate-800"><Info size={16} className="text-blue-700" aria-hidden /> Cómo se calcula</summary>
         <ol className="mt-2 list-decimal space-y-1 pl-5">
+          <li><strong>Horas/semana</strong>: las del horario en ese curso, sin contar la tutoría de grupo.</li>
           <li><strong>Horas ponderadas</strong> = horas a la semana en el curso × peso. El peso vale 1 por defecto; súbelo o bájalo si un módulo debe contar más o menos.</li>
           <li><strong>Cuota exacta</strong> = alumnos a repartir × horas ponderadas ÷ total de horas ponderadas del curso.</li>
           <li>Cada profesor recibe la parte entera de su cuota; los alumnos que sobran van a quien tiene el resto más grande (si empatan, a quien tiene más horas). Así la suma coincide siempre con el total.</li>

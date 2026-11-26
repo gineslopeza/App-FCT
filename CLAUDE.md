@@ -5,7 +5,7 @@
 - `src/datos/modelo.ts`: lee por texto de cabecera (`CAB_ALUMNO`, `CAB_EMPRESA`); las operaciones (`Operacion`) se traducen a celdas con `aCambios` sobre el libro recién leído, buscando por clave (NIA o nombre + apellido; empresa por nombre).
 - `src/datos/estado.tsx`: guardado optimista con espera de 600 ms; si el fichero cambió (`FicheroCambiado`), se relee y se reaplica. Mira el Excel cada 10 s.
 - `src/datos/almacen.ts`: escritorio (plugin-fs, escribe a temporal y renombra), navegador (File System Access API) y demo.
-- Reparto (`reparto.ts`): método del resto mayor; debe dar lo mismo que la hoja «ALUMNOS POR PERSONA». Cualquier cambio de cálculo necesita test.
+- Reparto (`reparto.ts`): horas del horario por curso SIN la tutoría de grupo (nunca cuenta); método del resto mayor; debe dar lo mismo que la hoja «ALUMNOS POR PERSONA». Cualquier cambio de cálculo necesita test.
 - Avisos (`avisos.ts`): normativa FE 2026-27 (confirmación por las cuatro partes 10 días naturales antes del inicio).
 - SAO es solo de lectura salvo que Ginés diga lo contrario.
 - Repositorio PÚBLICO: nunca subir Excel reales ni datos del alumnado; `public/demo/FCT_demo.xlsx` (de `scripts/demo.py`) es inventado. Capturas solo con la demo.
