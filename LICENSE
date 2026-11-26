@@ -1,0 +1,42 @@
+﻿APP FCT · SEGUIMIENTO DE LA FORMACIÓN EN EMPRESA
+Copyright (c) 2026 Ginés López Arribas. Todos los derechos reservados.
+
+1. Titularidad
+   Esta aplicación (código fuente y compilado, diseño de la interfaz, textos, iconos,
+   plantillas de Excel y documentación) es una obra original de Ginés López Arribas,
+   protegida por el texto refundido de la Ley de Propiedad Intelectual (Real Decreto
+   Legislativo 1/1996) y por los tratados internacionales sobre derechos de autor.
+
+2. Quién puede usarla
+   Solo pueden usarla:
+   a) el autor, y
+   b) las personas a las que el autor autorice de forma expresa (por escrito, también
+      por correo electrónico), en las condiciones que les indique.
+   La autorización es personal, gratuita salvo que se acuerde otra cosa, no exclusiva,
+   intransferible y revocable en cualquier momento.
+
+3. Qué no se permite sin autorización expresa del autor
+   - Copiar, instalar o ejecutar la aplicación.
+   - Distribuirla, publicarla, venderla, alquilarla, cederla o sublicenciarla.
+   - Modificarla, traducirla, adaptarla o crear obras derivadas.
+   - Descompilarla o aplicarle ingeniería inversa, salvo en los casos que la ley
+     permita expresamente.
+   - Quitar o alterar este aviso o los avisos de autoría de la aplicación.
+   Que los instaladores se puedan descargar no supone ninguna autorización de uso.
+
+4. Datos personales
+   La aplicación no guarda datos propios: lee y escribe el Excel que elige quien la usa
+   (en su OneDrive o en el SharePoint del centro); el autor no tiene acceso a ellos. Quien la usa es responsable de tratar los datos del alumnado
+   conforme al RGPD, a la LOPDGDD y a las instrucciones de su centro.
+
+5. Sin garantía
+   Se ofrece «tal cual», sin garantías de ningún tipo. El autor no responde de los daños
+   que se deriven de su uso. Las calificaciones y los trámites oficiales (ITACA, SAO…) son
+   responsabilidad de quien los hace; la aplicación solo ayuda a llevarlos.
+
+6. Componentes de terceros
+   La aplicación incluye bibliotecas de código abierto que conservan sus propias licencias
+   (MIT, Apache-2.0, ISC, BSD, OFL…). Esta licencia no las sustituye; se aplica a la obra
+   propia del autor.
+
+Para pedir autorización: Ginés López Arribas.
