@@ -7,7 +7,7 @@ La **base de datos es el Excel compartido** del departamento (OneDrive / SharePo
 ## Cómo se usa
 
 - **Escritorio (Windows)**: instala `App FCT_x.y.z_x64-setup.exe` de la [última versión](https://github.com/gineslopeza/App-FCT/releases/latest) y elige el Excel en tu carpeta de OneDrive sincronizada (en SharePoint: «Sincronizar» o «Agregar acceso directo a Mis archivos»). Se actualiza sola al abrirla.
-- **Web**: en Edge o Chrome, desde GitHub Pages. El Excel se elige del propio equipo y no sale del navegador.
+- **Web**: en Edge o Chrome, en https://gineslopeza.github.io/App-FCT/. El Excel se elige del propio equipo y no sale del navegador.
 - **Demostración**: «Probar con datos inventados» en la pantalla inicial.
 
 ## Trabajo compartido
@@ -38,9 +38,15 @@ FCT_REAL=/ruta/al/excel.xlsx pnpm test   # prueba de lectura con un Excel real (
 
 ## Publicar una versión
 
-1. Una sola vez: genera las claves del actualizador con `pnpm tauri signer generate -w ~/.tauri/app-fct.key` y crea en GitHub (Settings → Secrets and variables → Actions) los secretos `TAURI_SIGNING_PRIVATE_KEY` (contenido del `.key`), `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (la contraseña elegida) y `TAURI_UPDATER_PUBKEY` (contenido del `.key.pub`). En Settings → Pages, elige «GitHub Actions» como origen. Guarda la clave privada: sin ella las apps instaladas no aceptan versiones nuevas.
+1. **Una sola vez**: genera las claves del actualizador con `pnpm tauri signer generate -w ~/.tauri/app-fct.key` y crea en GitHub (Settings → Secrets and variables → Actions) los secretos `TAURI_SIGNING_PRIVATE_KEY` (contenido del `.key`), `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (la contraseña elegida) y `TAURI_UPDATER_PUBKEY` (contenido del `.key.pub`). En Settings → Pages, elige «GitHub Actions» como origen. Guarda la clave privada: sin ella las apps instaladas no aceptan versiones nuevas.
 2. Apunta los cambios en `CHANGELOG.md`, en «Sin publicar».
-3. `pnpm release` (o `pnpm release minor`) y `git push --follow-tags`. GitHub Actions compila el instalador, publica la release con `latest.json` y actualiza la web.
+3. Publica de una de estas dos formas:
+   - **Desde GitHub** (sin instalar nada): Actions → **Release** → *Run workflow*, con la versión `patch`, `minor`, `major` o una exacta (la primera: `0.1.0`).
+   - **Desde el equipo**: `pnpm release` (o `pnpm release minor`, o `pnpm release 0.1.0`) y `git push --follow-tags`.
+
+   GitHub Actions comprueba, compila el instalador de Windows firmado y publica la release con `latest.json`. Las apps instaladas se actualizan al abrirse.
+
+La **web** (GitHub Pages) se publica sola cada vez que se fusiona en `main` (workflow «Web»).
 
 ## Autoría
 

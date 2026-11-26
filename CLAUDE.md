@@ -11,5 +11,5 @@
 - Repositorio PÚBLICO: nunca subir Excel reales ni datos del alumnado; `public/demo/FCT_demo.xlsx` (de `scripts/demo.py`) es inventado. Capturas solo con la demo.
 - Interfaz en español, tono profesional y neutro, sin exclamaciones ni emojis (también en el CHANGELOG). `PageHeader` en cada pantalla; `blue` es el acento y `slate` los neutros; el tema oscuro remapea variables en `.dark` (index.css).
 - Accesible (WCAG 2.1 AA): etiquetas en los campos, `Modal`/`PanelLateral` atrapan el foco. Comprobar con axe al tocar la interfaz.
-- Antes de terminar: `pnpm comprobar`, apuntar en CHANGELOG «Sin publicar», Conventional Commits. Publicar: `pnpm release` + `git push --follow-tags`.
+- Antes de terminar: `pnpm comprobar`, apuntar en CHANGELOG «Sin publicar», Conventional Commits. Publicar: Actions → Release → Run workflow (o `pnpm release` + `git push --follow-tags`); la web se publica sola al fusionar en main (`pages.yml`). Nunca publicar ni fusionar sin el visto bueno de Ginés.
 - Responder a Ginés en español, ordenado, terminando con «Lo que te toca».
