@@ -63,8 +63,11 @@ describe('modelo', () => {
     expect(d.avisosLectura).toEqual([]);
     const r = calcularReparto(d.cursos, d.reparto, d.alumnos);
     const dam1 = r.grupos.find((g) => g.curso === '1DAM')!;
-    expect(dam1.aRepartir).toBe(20); // «previstos» manda
-    expect(dam1.profesores.reduce((a, p) => a + p.total, 0)).toBe(20);
+    // se reparten los nombres que hay en la hoja; «previstos» (20) solo informa
+    expect(dam1.aRepartir).toBe(dam1.enHoja);
+    expect(dam1.previstos).toBe(20);
+    expect(dam1.avisos.join(' ')).toContain('previstos 20');
+    expect(dam1.profesores.reduce((a, p) => a + p.total, 0)).toBe(dam1.enHoja);
   });
   it('guarda por clave aunque alguien haya movido las filas', () => {
     const libro = demo();

@@ -117,7 +117,7 @@ for k, (c, (n, *_r, prev)) in enumerate(CURSOS.items()):
     for i, v in enumerate([c, f'{c} 26_27', 'A', 4, 'AX', 'AE'], 1): ws.cell(r, i, v)
     ws.cell(r, 7, f"=COUNTA(INDIRECT(\"'\"&B{r}&\"'!A4:A300\"))")
     ws.cell(r, 8, prev).fill = AMARILLO
-    ws.cell(r, 9, f'=IF(H{r}<>"",H{r},G{r})')
+    ws.cell(r, 9, f'=G{r}')  # se reparten los nombres de la hoja; PREVISTOS solo informa
 ws.add_table(Table(displayName='Tabla4', ref='A4:I9', tableStyleInfo=TableStyleInfo(name='TableStyleLight9', showRowStripes=True)))
 ws['A11'] = '2. REPARTO POR PROFESOR Y CURSO'
 cabr = ['CURSO', 'PROFESOR', 'CÓDIGO HORARIO', 'HORAS/SEMANA', 'PESO', 'HORAS PONDERADAS', 'AJUSTE']

@@ -27,7 +27,7 @@ export function calcularReparto(cursos: Curso[], filas: FilaReparto[], alumnos: 
   const grupos = cursos.map((c) => {
     const fs = filas.filter((f) => f.curso === c.codigo);
     const als = alumnos.filter((a) => a.curso === c.codigo);
-    const aRepartir = c.previstos ?? als.length;
+    const aRepartir = als.length; // se reparten los nombres que hay en la hoja; «previstos» solo informa
     const pond = fs.map((f) => f.horas * f.peso);
     const totalPond = pond.reduce((a, b) => a + b, 0);
     const tocan = repartoJusto(pond, aRepartir);
@@ -41,6 +41,7 @@ export function calcularReparto(cursos: Curso[], filas: FilaReparto[], alumnos: 
     const suma = profesores.reduce((a, p) => a + p.total, 0);
     if (fs.length && suma !== aRepartir) avisos.push(`Con los ajustes se reparten ${suma} de ${aRepartir}.`);
     if (!fs.length) avisos.push('No hay profesores con horas en este curso.');
+    if (!als.length) avisos.push('Aún no hay alumnos en la hoja del curso.');
     return { curso: c.codigo, hoja: c.hoja, enHoja: als.length, previstos: c.previstos, aRepartir, sinTutor: als.filter((a) => !a.tutor).length, profesores, avisos };
   });
   const porProf = new Map<string, { profesor: string; horas: number; total: number; asignados: number; cursos: { curso: string; total: number; asignados: number }[] }>();
