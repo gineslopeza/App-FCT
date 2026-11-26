@@ -79,11 +79,14 @@ describe('modelo', () => {
   it('crea una empresa nueva al final de la tabla', () => {
     const libro = demo();
     const d = leerDatos(libro);
-    const { cambios } = aCambios(d, libro, [{ tipo: 'empresa_nueva', nombre: 'Empresa Nueva SL', datos: { localidad: 'Alzira', estado: 'Contactar' } }]);
+    const { cambios } = aCambios(d, libro, [{ tipo: 'empresa_nueva', nombre: 'Empresa Nueva SL', datos: { localidad: 'Alzira', estado: 'Contactar', plazas: 2 } }]);
     const nuevo = abrirLibro(aplicarCambios(libro, cambios));
     const d2 = leerDatos(nuevo);
     expect(d2.empresas.at(-1)!.nombre).toBe('Empresa Nueva SL');
     expect(d2.empresas.at(-1)!.estado).toBe('Contactar');
+    // «PLAZAS 26/27», no «PLAZAS LIBRES» (que es una fórmula)
+    expect(d2.colsEmpresas.plazas).toBe('L');
+    expect(d2.empresas.at(-1)!.plazas).toBe(2);
     const tabla = Object.entries(nuevo.partes).find(([k, v]) => k.startsWith('xl/tables/') && strFromU8(v).includes('Tabla5'))!;
     expect(strFromU8(tabla[1])).toContain(`ref="A3:Z${d2.empresas.at(-1)!.fila}"`);
   });

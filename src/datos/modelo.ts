@@ -160,7 +160,7 @@ export function leerDatos(libro: Libro): Datos {
     if (cab) {
       colsEmpresas = cab.cols; filaCabEmpresas = cab.fila;
       // «PLAZAS 26/27» (o el curso que toque)
-      for (const [ref, c] of he.celdas) { const mm = /^([A-Z]+)(\d+)$/.exec(ref)!; if (+mm[2] === cab.fila && /^PLAZAS/.test(norm(c.v))) colsEmpresas.plazas = mm[1]; }
+      for (const [ref, c] of he.celdas) { const mm = /^([A-Z]+)(\d+)$/.exec(ref)!; if (+mm[2] === cab.fila && /^PLAZAS/.test(norm(c.v)) && !/LIBRES/.test(norm(c.v))) colsEmpresas.plazas = mm[1]; }
       for (let f = cab.fila + 1; f <= he.maxFila; f++) {
         const get = (campo: string) => (cab.cols[campo] ? valor(he, cab.cols[campo] + f) : null);
         const nombre = txt(get('nombre'));
