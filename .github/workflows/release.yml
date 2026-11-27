@@ -1,21 +1,26 @@
 name: Release
 
-# Publica una versión: compila el instalador de Windows firmado y publica latest.json
+# Publica una versión: compila el instalador de Windows firmado y lo sube a la release, con latest.json
 # (las apps instaladas lo ven al abrirse y se actualizan solas).
 #
-# Dos formas de lanzarla:
-# - Desde GitHub: Actions → Release → Run workflow (versión: patch, minor, major o X.Y.Z).
-#   Prepara la versión (package.json, Cargo.toml, CHANGELOG), hace el commit y la etiqueta en main.
-# - Desde el equipo: pnpm release + git push --follow-tags (sube la etiqueta vX.Y.Z).
+# Tres formas de lanzarla:
+# - Crear una release en GitHub (Releases → Draft a new release, etiqueta 0.2.0 o v0.2.0 sobre main → Publish).
+# - Actions → Release → Run workflow (versión: patch, minor, major o X.Y.Z). Si la etiqueta ya existe,
+#   compila esa; si no, prepara la versión (package.json, Cargo.toml, CHANGELOG) y crea la etiqueta en main.
+# - Desde el equipo: pnpm release + git push --follow-tags, y después Run workflow con esa versión.
 on:
-  push:
-    tags: ['v*']
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versión: patch, minor, major o X.Y.Z (la primera: 0.1.0)'
+        description: 'Versión: patch, minor, major o X.Y.Z (si ya existe la etiqueta, solo compila)'
         required: true
         default: 'patch'
+
+concurrency:
+  group: release-${{ github.event.release.tag_name || inputs.version }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -31,26 +36,34 @@ jobs:
       tag: ${{ steps.t.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-        if: github.event_name == 'workflow_dispatch'
         with:
           ref: main
           fetch-depth: 0
-      - name: Preparar la versión (commit y etiqueta en main)
-        if: github.event_name == 'workflow_dispatch'
+      - id: t
         env:
+          EVENTO: ${{ github.event_name }}
+          TAG_RELEASE: ${{ github.event.release.tag_name }}
           VERSION: ${{ inputs.version }}
         run: |
+          if [ "$EVENTO" = "release" ]; then
+            echo "tag=$TAG_RELEASE" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Run workflow: si la etiqueta ya existe (con o sin «v»), se compila esa
+          for t in "$VERSION" "v$VERSION"; do
+            if git rev-parse -q --verify "refs/tags/$t" >/dev/null; then echo "tag=$t" >> "$GITHUB_OUTPUT"; exit 0; fi
+          done
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           node scripts/release.mjs "$VERSION"
           git push origin HEAD:main --follow-tags
-      - id: t
+          echo "tag=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: La versión de la app coincide con la etiqueta
+        env:
+          TAG: ${{ steps.t.outputs.tag }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "tag=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
-          fi
+          git checkout -q "$TAG"
+          V=$(node -p "require('./package.json').version")
+          if [ "${TAG#v}" != "$V" ]; then echo "::error::La etiqueta $TAG no coincide con la versión de package.json ($V). Prepara la versión con Run workflow o con pnpm release."; exit 1; fi
 
   escritorio:
     needs: etiqueta

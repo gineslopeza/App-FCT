@@ -41,10 +41,11 @@ FCT_REAL=/ruta/al/excel.xlsx pnpm test   # prueba de lectura con un Excel real (
 1. **Una sola vez**: genera las claves del actualizador con `pnpm tauri signer generate -w ~/.tauri/app-fct.key` y crea en GitHub (Settings → Secrets and variables → Actions) los secretos `TAURI_SIGNING_PRIVATE_KEY` (contenido del `.key`), `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` (la contraseña elegida) y `TAURI_UPDATER_PUBKEY` (contenido del `.key.pub`). En Settings → Pages, elige «GitHub Actions» como origen. Guarda la clave privada: sin ella las apps instaladas no aceptan versiones nuevas.
 2. Apunta los cambios en `CHANGELOG.md`, en «Sin publicar».
 3. Publica de una de estas dos formas:
-   - **Desde GitHub** (sin instalar nada): Actions → **Release** → *Run workflow*, con la versión `patch`, `minor`, `major` o una exacta (la primera: `0.1.0`).
-   - **Desde el equipo**: `pnpm release` (o `pnpm release minor`, o `pnpm release 0.1.0`) y `git push --follow-tags`.
+   - **Run workflow** (recomendado): Actions → **Release** → *Run workflow*, con la versión `patch`, `minor`, `major` o una exacta (`0.2.0`). Si ya existe la etiqueta de esa versión (`0.1.0` o `v0.1.0`), compila esa etiqueta y añade el instalador a su release.
+   - **Crear la release a mano** en GitHub (Releases → *Draft a new release*): al pulsar *Publish release* se lanza el mismo workflow y sube el instalador a esa release. La versión de `package.json` en la etiqueta debe coincidir con la de la release.
+   - **Desde el equipo**: `pnpm release` (o `pnpm release minor`, o `pnpm release 0.2.0`), `git push --follow-tags` y después crear la release de esa etiqueta en GitHub.
 
-   GitHub Actions comprueba, compila el instalador de Windows firmado y publica la release con `latest.json`. Las apps instaladas se actualizan al abrirse.
+   GitHub Actions comprueba, compila el instalador de Windows firmado y lo sube a la release con `latest.json`. Las apps instaladas se actualizan al abrirse.
 
 La **web** (GitHub Pages) se publica sola cada vez que se fusiona en `main` (workflow «Web»).
 

@@ -27,4 +27,4 @@ execSync('git add package.json src-tauri/Cargo.toml CHANGELOG.md', { stdio: 'inh
 // (si la versión no cambia, el commit solo lleva el CHANGELOG)
 execSync(`git commit -m "chore(release): v${nueva}"`, { stdio: 'inherit' });
 execSync(`git tag v${nueva}`, { stdio: 'inherit' });
-console.log(`\nVersión v${nueva} preparada. Para publicarla: git push --follow-tags`);
+console.log(`\nVersión v${nueva} preparada. Para publicarla: git push --follow-tags y crea la release de v${nueva} en GitHub (o usa Actions → Release → Run workflow).`);
