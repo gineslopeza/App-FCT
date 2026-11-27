@@ -1,0 +1,114 @@
+@import "tailwindcss";
+@import "@fontsource-variable/atkinson-hyperlegible-next";
+
+/* ---------- Identidad ----------
+   Barra lateral oscura y neutra; el contenido sobre papel claro. El color de acción («acento») lo elige
+   cada docente en su perfil; amarillo tiza para lo pendiente y rojo de corregir para los errores.
+   Las escalas «blue» y «slate» se redefinen aquí: así todas las pantallas usan la paleta sin tocarlas una a una. */
+@theme {
+  --font-sans: 'Atkinson Hyperlegible Next Variable', ui-sans-serif, system-ui, sans-serif;
+
+  --color-pizarra: #1a1d23;
+  --color-pizarra-2: #23272f;
+  --color-tiza: #e9b949;
+  --color-papel: #f6f7f9;
+
+  --color-slate-50: #f6f7f9; --color-slate-100: #eceef2; --color-slate-200: #dde1e7; --color-slate-300: #c5cbd4;
+  --color-slate-400: #646d7c; --color-slate-500: #596273; --color-slate-600: #454d5c; --color-slate-700: #333a47;
+  --color-slate-800: #222833; --color-slate-900: #13171e;
+
+  --color-blue-50: #eef4ff; --color-blue-100: #dbe7ff; --color-blue-200: #bcd2fe; --color-blue-300: #8fb3fb;
+  --color-blue-400: #5b8ef4; --color-blue-500: #3a6fe6; --color-blue-600: #2a5bd7; --color-blue-700: #2249b3;
+  --color-blue-800: #1f3f8f; --color-blue-900: #1d376f;
+
+  --color-emerald-600: #047857;
+  --color-red-50: #fbeeee; --color-red-200: #efc4c4; --color-red-600: #c94141; --color-red-700: #a83434;
+}
+
+@keyframes avance { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }
+
+@layer base {
+  html { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+  body { background: var(--color-papel); color: var(--color-slate-900); }
+  :focus-visible { outline: 2px solid var(--color-blue-600); outline-offset: 2px; }
+  ::selection { background: var(--color-blue-200); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+}
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-800 transition-colors hover:border-slate-400 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply border-blue-600 bg-blue-600 text-white hover:border-blue-700 hover:bg-blue-700; }
+  .btn-danger { @apply border-red-200 text-red-700 hover:bg-red-50; }
+  .btn-ghost { @apply border-transparent bg-transparent text-slate-600 hover:border-transparent hover:bg-slate-100 hover:text-slate-900; }
+  .btn-sm { @apply px-2 py-1 text-xs; }
+  .input { @apply w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-100; }
+  .label { @apply mb-1 block text-xs font-semibold text-slate-600; }
+  .card { @apply rounded-xl border border-slate-200 bg-white; }
+  .h1 { @apply text-2xl font-bold tracking-tight text-slate-900; }
+  .h2 { @apply text-base font-bold text-slate-800; }
+  .muted { @apply text-sm text-slate-500; }
+  .tbl { @apply w-full border-collapse text-sm tabular-nums; }
+  .tbl th { @apply border-b border-slate-200 bg-slate-50 px-2 py-2 text-left text-xs font-semibold text-slate-600; }
+  .tbl td { @apply border-b border-slate-100 px-2 py-1.5; }
+  .chip { @apply inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs font-semibold text-slate-700; }
+  .tabs { @apply flex flex-wrap gap-1 border-b border-slate-200; }
+  .tab { @apply -mb-px border-b-2 border-transparent px-3 py-2 text-sm font-semibold text-slate-500 hover:text-slate-800; }
+  .tab-activa { @apply border-blue-600 text-blue-700; }
+}
+
+/* ---------- Tema oscuro ----------
+   Se invierte la escala de grises y se oscurecen los tonos claros de color,
+   así todas las clases de Tailwind funcionan sin duplicarlas con «dark:». */
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  color-scheme: dark;
+  --color-papel: #0e1115;
+  --color-pizarra: #12151a; --color-pizarra-2: #1b1f26;
+  --color-slate-50: #12151a; --color-slate-100: #191d23; --color-slate-200: #252a33; --color-slate-300: #353c47;
+  --color-slate-400: #7b8494; --color-slate-500: #9aa3b2; --color-slate-600: #c0c7d2; --color-slate-700: #d8dde5;
+  --color-slate-800: #e8ebf0; --color-slate-900: #f4f6f8;
+  --color-amber-50: #2a1f08; --color-amber-100: #3b2b0a; --color-amber-200: #5a420f; --color-amber-300: #7a5a16;
+  --color-amber-700: #f0c766; --color-amber-800: #f5d585; --color-amber-900: #fae5ad;
+  --color-rose-50: #3a0f1b; --color-rose-400: #fb7185; --color-rose-700: #fda4af;
+  --color-red-50: #3a1212; --color-red-100: #4a1616; --color-red-200: #6b2222; --color-red-300: #8a2b2b; --color-red-600: #f08080; --color-red-700: #f5a3a3; --color-red-800: #f8b4b4; --color-red-900: #fbd0d0;
+  --color-emerald-50: #062a1f; --color-emerald-100: #0b3a2b; --color-emerald-200: #14533e; --color-emerald-600: #34d399; --color-emerald-700: #6ee7b7; --color-emerald-800: #a7f3d0;
+  --color-violet-50: #1e1638; --color-violet-800: #c4b5fd;
+}
+.dark .bg-white, .dark .card, .dark .kpi, .dark .btn:not(.btn-primary):not(.btn-ghost), .dark .input, .dark .chip { background-color: #161a20; }
+.dark .btn:not(.btn-primary):not(.btn-ghost):hover { background-color: #1e232b; }
+.dark .btn-primary, .dark .text-white { color: #fff; }
+/* En oscuro la escala del acento va al revés: el hover del botón principal se oscurece en vez de aclararse (contraste ≥ 4,5:1) */
+.dark .btn-primary:hover { background-color: var(--color-blue-600); border-color: var(--color-blue-600); filter: brightness(0.88); }
+
+/* ---------- Barra lateral ---------- */
+.pizarra { background: var(--color-pizarra); color: #e9ecf1; }
+.pizarra .nav-item { color: #b7bfcc; }
+.pizarra .nav-item:hover { background: rgb(255 255 255 / 0.06); color: #fff; }
+.pizarra .nav-item.activo { background: rgb(255 255 255 / 0.1); color: #fff; box-shadow: inset 3px 0 0 var(--acento-muestra-claro, #8fb3fb); }
+.pizarra .seccion { color: #9aa3b2; }
+
+/* ---------- Acentos (se eligen en «Mi perfil») ---------- */
+:root { --acento-muestra-claro: #8fb3fb; --color-blue-50: #eef4ff; --color-blue-100: #dbe7ff; --color-blue-200: #bcd2fe; --color-blue-300: #8fb3fb; --color-blue-400: #5b8ef4; --color-blue-500: #3a6fe6; --color-blue-600: #2a5bd7; --color-blue-700: #2249b3; --color-blue-800: #1f3f8f; --color-blue-900: #1d376f; --acento-muestra: #2a5bd7; }
+:root.dark { --color-blue-50: #15223e; --color-blue-100: #162852; --color-blue-200: #19306c; --color-blue-300: #204193; --color-blue-400: #3a6fe6; --color-blue-500: #5b8ef4; --color-blue-600: #2a5bd7; --color-blue-700: #8fb3fb; --color-blue-800: #bcd2fe; --color-blue-900: #dbe7ff; }
+:root[data-acento="verde"] { --acento-muestra-claro: #72c1a8; --color-blue-50: #ebf6f2; --color-blue-100: #d2ede4; --color-blue-200: #a7dac9; --color-blue-300: #72c1a8; --color-blue-400: #3fa487; --color-blue-500: #1c8b6f; --color-blue-600: #0d7a63; --color-blue-700: #0a6552; --color-blue-800: #0a5444; --color-blue-900: #083f34; --acento-muestra: #0d7a63; }
+:root.dark[data-acento="verde"] { --color-blue-50: #0b2623; --color-blue-100: #0c322c; --color-blue-200: #0c3f37; --color-blue-300: #0d5548; --color-blue-400: #1c8b6f; --color-blue-500: #3fa487; --color-blue-600: #0d7a63; --color-blue-700: #72c1a8; --color-blue-800: #a7dac9; --color-blue-900: #d2ede4; }
+:root[data-acento="violeta"] { --acento-muestra-claro: #b4a1f6; --color-blue-50: #f4f1fe; --color-blue-100: #e9e3fd; --color-blue-200: #d4c8fb; --color-blue-300: #b4a1f6; --color-blue-400: #9273ef; --color-blue-500: #7752e5; --color-blue-600: #653fd2; --color-blue-700: #5432ad; --color-blue-800: #452b8b; --color-blue-900: #3a276f; --acento-muestra: #653fd2; }
+:root.dark[data-acento="violeta"] { --color-blue-50: #221b3e; --color-blue-100: #2a1e50; --color-blue-200: #342369; --color-blue-300: #472f90; --color-blue-400: #7752e5; --color-blue-500: #9273ef; --color-blue-600: #653fd2; --color-blue-700: #b4a1f6; --color-blue-800: #d4c8fb; --color-blue-900: #e9e3fd; }
+:root[data-acento="frambuesa"] { --acento-muestra-claro: #fb9aac; --color-blue-50: #fff1f3; --color-blue-100: #ffe0e5; --color-blue-200: #fec6d0; --color-blue-300: #fb9aac; --color-blue-400: #f56783; --color-blue-500: #e8406a; --color-blue-600: #cc2654; --color-blue-700: #ab1e46; --color-blue-800: #8e1c3e; --color-blue-900: #771b37; --acento-muestra: #cc2654; }
+:root.dark[data-acento="frambuesa"] { --color-blue-50: #3d1624; --color-blue-100: #4e162a; --color-blue-200: #641830; --color-blue-300: #8a1f3e; --color-blue-400: #e8406a; --color-blue-500: #f56783; --color-blue-600: #cc2654; --color-blue-700: #fb9aac; --color-blue-800: #fec6d0; --color-blue-900: #ffe0e5; }
+:root[data-acento="turquesa"] { --acento-muestra-claro: #6bd4e1; --color-blue-50: #ecfbfc; --color-blue-100: #d0f4f7; --color-blue-200: #a6e8ef; --color-blue-300: #6bd4e1; --color-blue-400: #2fb6c9; --color-blue-500: #1499ae; --color-blue-600: #0f7b93; --color-blue-700: #116377; --color-blue-800: #145262; --color-blue-900: #154453; --acento-muestra: #0f7b93; }
+:root.dark[data-acento="turquesa"] { --color-blue-50: #112831; --color-blue-100: #11323c; --color-blue-200: #103e4b; --color-blue-300: #0f5667; --color-blue-400: #1499ae; --color-blue-500: #2fb6c9; --color-blue-600: #0f7b93; --color-blue-700: #6bd4e1; --color-blue-800: #a6e8ef; --color-blue-900: #d0f4f7; }
+
+
+/* ---------- App FCT ---------- */
+@layer components {
+  .kpi { @apply flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-4; }
+  .kpi-valor { @apply text-3xl font-bold tracking-tight text-slate-900 tabular-nums; }
+  .kpi-texto { @apply text-sm text-slate-600; }
+  .fila-click { @apply cursor-pointer hover:bg-slate-50; }
+  .punto { @apply inline-block size-3.5 rounded-full border transition-transform; }
+}
+.panel-lateral { box-shadow: -16px 0 40px rgb(15 23 42 / 0.18); }
+@keyframes entrar-derecha { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+.entrar-derecha { animation: entrar-derecha .18s ease-out; }

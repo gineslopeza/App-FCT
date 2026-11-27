@@ -1,0 +1,41 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Permisos de la ventana principal: elegir el Excel, leerlo y guardarlo, y actualizar la app.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "window-state:default",
+    "dialog:allow-open",
+    "process:allow-restart",
+    "updater:default",
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-rename",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [{ "path": "**/.~appfct-*" }]
+    },
+    {
+      "identifier": "fs:allow-stat",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "**" }]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [{ "path": "**" }]
+    }
+  ]
+}

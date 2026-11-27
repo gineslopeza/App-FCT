@@ -1,0 +1,98 @@
+name: Release
+
+# Publica una versión: compila el instalador de Windows firmado y publica latest.json
+# (las apps instaladas lo ven al abrirse y se actualizan solas).
+#
+# Dos formas de lanzarla:
+# - Desde GitHub: Actions → Release → Run workflow (versión: patch, minor, major o X.Y.Z).
+#   Prepara la versión (package.json, Cargo.toml, CHANGELOG), hace el commit y la etiqueta en main.
+# - Desde el equipo: pnpm release + git push --follow-tags (sube la etiqueta vX.Y.Z).
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versión: patch, minor, major o X.Y.Z (la primera: 0.1.0)'
+        required: true
+        default: 'patch'
+
+permissions:
+  contents: write
+
+jobs:
+  comprobar:
+    uses: ./.github/workflows/ci.yml
+
+  etiqueta:
+    needs: comprobar
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.t.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name == 'workflow_dispatch'
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Preparar la versión (commit y etiqueta en main)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          node scripts/release.mjs "$VERSION"
+          git push origin HEAD:main --follow-tags
+      - id: t
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=v$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+  escritorio:
+    needs: etiqueta
+    runs-on: windows-latest
+    env:
+      TAG: ${{ needs.etiqueta.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.etiqueta.outputs.tag }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - run: pnpm install --frozen-lockfile
+      - name: Clave pública del actualizador
+        shell: bash
+        env:
+          PUBKEY: ${{ secrets.TAURI_UPDATER_PUBKEY }}
+        run: |
+          if [ -z "$PUBKEY" ]; then echo "::error::Falta el secreto TAURI_UPDATER_PUBKEY (ver README, «Publicar una versión»)."; exit 1; fi
+          node -e "const f='src-tauri/tauri.conf.json',fs=require('fs');const c=JSON.parse(fs.readFileSync(f,'utf8'));c.plugins.updater.pubkey=process.env.PUBKEY.trim();fs.writeFileSync(f,JSON.stringify(c,null,2))"
+      - name: Notas de la versión
+        shell: bash
+        run: |
+          VERSION="${TAG#v}"
+          awk -v v="$VERSION" '$0 ~ "^## \\[" v "\\]" {f=1; next} /^## \[/ {f=0} f' CHANGELOG.md > notas.md
+          [ -s notas.md ] || echo "Versión $VERSION." > notas.md
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ env.TAG }}
+          releaseName: App FCT ${{ env.TAG }}
+          releaseBodyPath: notas.md
+          releaseDraft: false
+          prerelease: false
+          includeUpdaterJson: true
